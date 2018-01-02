@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 import re
 import csv
@@ -41,10 +42,11 @@ def get_list_category(html):
                 link_produkt = 'http://' + str(link)[2:]
                 print(len(get_all_produkt(get_html(link_produkt))))
                 if len(get_all_produkt(get_html(link_produkt))) != 0:
-                    for k in get_all_produkt(get_html(link_produkt)):
-                        #    print(re.sub("\s\s+", " ", a.find('a').text), k)
-                        data_produkt.append(k);
-                        writeTextFile(k)
+                   for k in get_all_produkt(get_html(link_produkt)):
+                   #    print(re.sub("\s\s+", " ", a.find('a').text), k)
+                   # print(k)
+                       data_produkt.append(k)
+                           # writeTextFile(k)
 
     return data_produkt
 
@@ -56,8 +58,8 @@ def get_all_produkt(html):
     image = soup.find_all('div', class_='image')
     #    id = 1
     for i in image:
-        a = i.find('a').get('href')
-        produkt.append(URL_PRODUKT + a);
+       a = i.find('a').get('href')
+       produkt.append(URL_PRODUKT + a)
     return produkt
 
 
@@ -77,7 +79,7 @@ def get_detail_produkt(html):
         type = ''
     # PRICE PLN
     try:
-        price1 = soup.find('span', id='price1').text.strip().replace("PLN","").replace("/m²","").replace(",",".").replace(" ","")
+        price1 = soup.find('span', id='price1').text.strip().replace("PLN", "").replace("/m²", "").replace(",", ".").replace(" ", "")
         price_pln = price1
     except:
         price_pln = '0.00'
@@ -93,7 +95,8 @@ def get_detail_produkt(html):
         itemNumber = ''
     # image
     try:
-        product_img = URL_PRODUKT + soup.find('img', id='productImg').get('src')
+        #product_img = URL_PRODUKT + soup.find('img', id='productImg').get('src')
+        product_img = get_images(soup)
     except:
         product_img = ''
     # description full
@@ -135,7 +138,7 @@ def write_csv(data):
 
 # write text file
 def writeTextFile(text):
-    file = open("tmp.txt","a")
+    file = open("tmp.txt", "a")
     file.write(text+"\n")
     file.close()
 
@@ -146,26 +149,65 @@ def make_data_all(url):
 # images
 def get_images(html):
     soup = BeautifulSoup(html, 'lxml')
-    data = soup.find_all("script")[19].string
-    p = re.compile('var jProductData = (.*?);')
-    m = p.findall(data)
-    stocks = json.loads(m[0])
-    for stock in stocks:
-        print(stock)
+    data = soup.find_all('script')
+    url_img = ''
+    img = []
+    num_img = 0
+    for i in data:
+        fd = i.text.strip()
+        if "jProductData" in fd:
+            large = fd
+            for l in large.split(','):
+                if "/pl/pl/images/" in l:
+                    img.append("http://www.ikea.com"+l.replace('"large":["', '').replace('"', '').replace(']}', ''))
+                    # url_img += ",http://www.ikea.com"+l.replace('"large":["', '').replace('"', '').replace(']}', '')
+    for images in img[1:]:
+        if num_img > 3:
+            print ('--for end---', num_img, '--for end---')
+            continue
+        url_img += "," + images
+        num_img += 1
+    print(url_img[1:])
+    return url_img[1:]
 
-
+# parsing images
+def make_img_scv():
+    id = 1
+    img = ''
+    csv_header = ['id', 'art', 'img']
+    csv.register_dialect('myDialect', delimiter=';', quoting=csv.QUOTE_ALL, quotechar='"')
+    with open('product.csv') as myFile:
+        reader = csv.DictReader(myFile, dialect='myDialect')
+        fImg = open('p_img.csv', 'w')
+        with fImg:
+            writer = csv.DictWriter(fImg, fieldnames=csv_header, dialect='myDialect')
+            writer.writeheader()
+            for row in reader:
+                print(id, row['art'], row['id'])
+                image = get_images(get_html('http://www.ikea.com/pl/pl/search/?query='+row['art']))
+                if len(image) != 0:
+                    writer.writerow({'id': row['id'], 'art': row['art'], 'img': get_images(get_html('http://www.ikea.com/pl/pl/search/?query='+row['art']))}) #'img': get_images(get_html('http://www.ikea.com/pl/pl/search/?query='+row['art']))
+                id += 1
 def main():
-    #get_images(get_html("http://www.ikea.com/pl/pl/catalog/products/40363126/"))
-    link_produkt = get_list_category(get_html(URL))
-    link_produkt.sort()
-    # for url in list(set(link_produkt)):
-    #     data = get_detail_produkt(get_html(url))
-    #     write_csv(data)
-    #     print(url)
-    #     #writeTextFile(url)
-    #print(len(url))
-    with Pool(40) as p:
-        p.map(make_data_all, set(link_produkt))
+    make_img_scv()
+     # get_images(get_html("http://www.ikea.com/pl/pl/catalog/products/10268852/"))
+    # link_produkt = get_list_category(get_html(URL))
+    # link_produkt.sort()
+    # # for url in list(set(link_produkt)):
+    # #     data = get_detail_produkt(get_html(url))
+    # #     write_csv(data)
+    # #     print(url)
+    # #     #writeTextFile(url)
+    # #print(len(url))
+    # with Pool(20) as p:
+    #     p.map(make_data_all, set(link_produkt))
+
+    #print (get_html("http://www.ikea.com/pl/pl/catalog/products/40363126/"))
+
+
+
+
+
 
 
 if __name__ == '__main__':
