@@ -16,7 +16,7 @@ def get_html(url):
 def get_all_produkt(html):
     soup = BeautifulSoup(html, 'lxml')
     produkt = []
-    image = soup.find_all('div', class_='parentContainer')
+    image = soup.find_all('div', class_='image')
     #    id = 1
     for i in image:
        a = i.find('a').get('href')
@@ -45,13 +45,15 @@ def get_detail_produkt(html):
         short_desk = ''
     # PRICE PLN
     try:
-        price1 = soup.find('span', id='price1').text.strip().replace("PLN", "").replace("/m²", "").replace(",", ".").replace(" ", "")
-        price_pln = price1
+        price_pln = soup.find('span', id='price1').text.strip().replace("PLN", "").replace("/m²", "").replace(",", ".").replace(" ", "")
+        # price = price_pln.replace(' ', '')
+        # price_pln = price
     except:
         price_pln = '0.00'
     # PRICE GRN
     try:
-        price_grn = int(price_pln) * 9
+        price_grn = round(float(price_pln) * 9)
+
     except:
         price_grn = '0.00'
     # articul
@@ -127,8 +129,17 @@ def write_csv(data):
                          '1',
                          data['url_img']))
 
-def main():
-    links = get_all_produkt(get_html("http://www.ikea.com/pl/pl/search/?query=LINNMON&pageNumber=0"))
+    # parsing by articul
+def parse_by_art():
+    art = open('t.txt','r')
+
+    for i in art.readlines():
+        write_csv(get_detail_produkt(get_html('http://www.ikea.com/pl/pl/search/?query='+i.strip())))
+        print(i.strip())
+# parsing by name of goods
+def parse_by_goods(url):
+    links = get_all_produkt(get_html(url))
+    print (len(links))
     for i in links:
         produkt = get_detail_produkt(get_html(i))
         print (translate(produkt['kateg']), produkt['name'], produkt['itemNumber'])
@@ -137,6 +148,11 @@ def main():
         print (produkt['url_img'])
         print ('-----------------------------------------------------------------------')
         write_csv(get_detail_produkt(get_html(i)))
+def main():
+    url = input('----Enter the URL-----  ')
+    parse_by_goods(url)
+    #parse_by_art()
+
 
 if __name__ == '__main__':
     main()
