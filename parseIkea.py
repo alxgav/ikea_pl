@@ -3,7 +3,7 @@ import requests
 import re
 import csv
 import json
-
+import simplejson as json
 
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -170,6 +170,108 @@ def get_images(html):
     print(url_img[1:])
     return url_img[1:]
 
+
+
+# data_produkt
+
+def get_detail_produkt(html):
+    soup = BeautifulSoup(html, 'lxml')
+    price_pln = 0.00
+    # name of product
+    try:
+        name = soup.find('span', id='name').text.strip()
+    except:
+        name = ''
+    # short description
+    try:
+        short_desk = soup.find('span', id='type').text.strip()
+    except:
+        short_desk = ''
+    # articul
+    try:
+        itemNumber = soup.find('div', id='itemNumber').text.strip()
+    except:
+        itemNumber = ''
+    # description full
+    try:
+        deskr = soup.find('div', id='cbftssection').text.strip()
+    except:
+        deskr = ''
+    # width heigth
+    try:
+        metric = soup.find('div', id = 'metric').text.strip()
+    except:
+        metric = ''
+    data = {'name': name,
+            'short_desk': short_desk,
+            'itemNumber': itemNumber,
+            'metric': metric,
+            'deskr': deskr}
+    return data
+# javascript variables
+def get_script(html):
+    soup = BeautifulSoup(html, 'lxml')
+    data = soup.find_all('script')
+    data_all = {}
+    img = []
+    url_img = ''
+    name = ""
+    short_desk = ""
+    itemNumber = ""
+    metric = ""
+    deskr = ""
+    images = ""
+    images2 = ''
+    s_ = ""
+    d = {}
+    url = []
+    price_pln = 0
+    for i in data:
+        fd = i.text.strip()
+
+        if "jProductData" in fd:
+            #data_all.clear()
+
+            for l in fd.split(','):
+                if '"url":' in l:
+                    u = "http://www.ikea.com"+l.replace('"url":','').replace('"', '').replace(']}', '')
+                    url.append(u)
+
+                #     d = get_detail_produkt(get_html(u))
+                #     name = d['name']
+                #     short_desk = d['short_desk']
+                #     itemNumber = d['itemNumber']
+                #     metric = d['metric']
+                #     deskr = d['deskr']
+                #
+                # if '"rawPrice":' in l:
+                #     #print(l.replace('"rawPrice":','').replace('"', '').replace('}', ''))
+                #     price_pln = l.replace('"rawPrice":','').replace('"', '').replace('}', '')
+                # if "/pl/pl/images/" in l:
+                #     s_ += ','+ itemNumber + "http://www.ikea.com"+l.replace('"large":["', '').replace('"', '').replace(']}', '')
+                #
+                # images = s_.replace(itemNumber,'')[1:]
+                # for i in images.split(','):
+                #
+                #     if i[0:4] == 'http':
+                #         images2 += ',' + i
+                # # print (images)
+                # data_all = {'name': name,
+                #             'short_desk': short_desk,
+                #             'itemNumber': itemNumber,
+                #             'metric': metric,
+                #             'deskr': deskr,
+                #             'price_pln': price_pln,
+                #             'price_grn': round(float(price_pln)) * 10,
+                #             'images': images2[1:]}
+                # images2= ''
+    # return data_all
+    for row in url:
+        d = get_detail_produkt(get_html(row))
+        data_all = d
+        print (d['itemNumber'])
+        print ('-----------------')
+    return data_all
 # parsing images
 def make_img_scv():
     id = 1
@@ -189,7 +291,9 @@ def make_img_scv():
                     writer.writerow({'id': row['id'], 'art': row['art'], 'img': get_images(get_html('http://www.ikea.com/pl/pl/search/?query='+row['art']))}) #'img': get_images(get_html('http://www.ikea.com/pl/pl/search/?query='+row['art']))
                 id += 1
 def main():
-    make_img_scv()
+    data = get_script(get_html('http://www.ikea.com/pl/pl/catalog/products/S99133671/'))
+    print (data)
+    #make_img_scv()
      # get_images(get_html("http://www.ikea.com/pl/pl/catalog/products/10268852/"))
     # link_produkt = get_list_category(get_html(URL))
     # link_produkt.sort()
