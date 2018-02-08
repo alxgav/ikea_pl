@@ -80,7 +80,7 @@ def get_script(html, name_f, kateg):
     #file = open('testfile.txt', 'a')
     conn = sqlite3.connect('db/ikea')
     c = conn.cursor()
-
+    file = open('error.txt','a')
     for i in data:
         fd = i.text.strip()
         if "jProductData" in fd:
@@ -98,15 +98,20 @@ def get_script(html, name_f, kateg):
                 if '"rawPrice":' in l:
                     price_pln = l.replace('"rawPrice":','').replace('"', '').replace('}', '')
                     #price_grn = round(float(price_pln) * 10)
-                    c.execute("insert into ikea (art_num, price_pln, goods_name, short_desk, description, parent_kateg, kateg) values('"
-                                +art_num+"','"
-                                +price_pln+"','"
-                                +goods_name+"','"
-                                +short_desk+"','"
-                                +description+"','"
-                                +name_f+"','"
-                                +kateg+"')")
-                    conn.commit()
+                    try:
+                        c.execute("insert into ikea (art_num, price_pln, goods_name, short_desk, description, parent_kateg, kateg) values('"
+                                 +art_num+"','"
+                                 +price_pln+"','"
+                                 +goods_name+"','"
+                                 +short_desk+"','"
+                                 +description+"','"
+                                 +name_f+"','"
+                                 +kateg+"')")
+                        conn.commit()
+                    except:
+                        print ('error:', art_num)
+                        file.write('error: ' + art_num)
+
                 # images
                 if '/pl/pl/images/' in l:
                     images = "http://www.ikea.com"+l.replace('"large":["', '').replace('"', '').replace(']}', '')
@@ -115,8 +120,8 @@ def get_script(html, name_f, kateg):
                     # print ('images', images)
                     # f.write(images+'\n')
 
-
-
+    conn.close
+    file.close()
 #parsing by name of goods
 def parse_by_goods(url, name_f, kateg):
     links = get_all_produkt(get_html(url))
